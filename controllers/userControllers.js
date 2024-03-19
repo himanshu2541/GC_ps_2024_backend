@@ -1,54 +1,73 @@
 const asyncHandler = require("express-async-handler");
 const User = require("../models/userModel");
-const { CustomError } = require("../utils");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const isEmail = require("validator/lib/isEmail");
 
 // Login user
+// post request with email and password
+// public access
+
 const loginUser = asyncHandler(async (req, res) => {
   if (!req.body) {
-    throw new CustomError("Please provide details", 400);
+    res.status(400);
+    throw new Error("Please provide details");
   }
 
   const { email, password } = req.body;
 
   // Checking if user filled all the details
   if (!email || !password) {
-    throw new CustomError("Please provide all details", 400);
+    res.status(400);
+    throw new Error("Please provide all details");
+  }
+
+  if (!isEmail(email)) {
+    res.status(400);
+    throw new Error("Please provide valid email");
   }
 
   // Checking for user
   const user = await User.findOne({ email });
 
   if (!user) {
-    throw new CustomError("user not found", 404);
+    res.status(404);
+    throw new Error("user not found");
   }
 
   // Checking for password
 
   if (user && (await bcrypt.compare(password, user.password))) {
     res.status(200).json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
       token: generateToken(user._id),
     });
   } else {
-    throw new CustomError("Invalid Credentials", 401);
+    res.status(401);
+    throw new Error("Invalid Credentials");
   }
 });
 
 // Register user
+// post request with name, email and password
+// public access
+
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
-    throw new CustomError("Please add all fields", 400);
+    res.status(400);
+    throw new Error("Please add all fields");
+  }
+
+  if (!isEmail(email)) {
+    res.status(400);
+    throw new Error("Please provide valid email");
   }
 
   // checking for user existance
   const userExists = await User.findOne({ email });
   if (userExists) {
-    throw new CustomError("User already exists", 400);
+    res.status(409);
+    throw new Error("User already exists");
   }
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
@@ -60,36 +79,45 @@ const registerUser = asyncHandler(async (req, res) => {
 
   if (user) {
     res.status(201).json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
       token: generateToken(user._id),
     });
   } else {
-    throw new CustomError("Invalid Credentials", 400);
+    res.status(401);
+    throw new Error("Invalid Credentials");
   }
 });
 
 // update user
+// post request with password and new password
+// private access
 const updateUser = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { password, newPassword } = req.body;
+  // id we are getting from auth middleware
+
+  const { id, password, newPassword } = req.body;
   if (!id) {
-    throw new CustomError("Please provide id", 400);
+    res.status(400);
+    throw new Error("Please provide id");
+  }
+
+  if (!password || !newPassword) {
+    res.status(400);
+    throw new Error("Please provide password and new password");
   }
 
   // checking for user existance
 
   const user = await User.findById(id);
   if (!user) {
-    throw new CustomError("User not found", 404);
+    res.status(404);
+    throw new Error("User not found");
   }
 
   // confirming the user password
   const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
   if (!isPasswordCorrect) {
-    throw new CustomError("Invalid Credentials", 401);
+    res.status(401);
+    throw new Error("Invalid Credentials");
   }
 
   // updating the user password
@@ -104,27 +132,35 @@ const updateUser = asyncHandler(async (req, res) => {
     }
   );
 
-  if (updatedUser) {
-    res.status(200).json({ msg: "Password updated" });
-  } else {
-    throw new CustomError("Internal Server Error", 500);
+  if (!updatedUser) {
+    res.status(500);
+    throw new Error("Internal Server Error");
   }
+
+  res.status(200).json({ msg: "Password updated" });
 });
 
+
+// delete request
+// post request and password
+// private access
+
 const deleteUser = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { password } = req.body;
+  const { id, password } = req.body;
   if (!id) {
-    throw new CustomError("Please provide id", 400);
+    res.status(400);
+    throw new Error("Please provide id");
   }
   if (!password) {
-    throw new CustomError("Please provide password", 400);
+    res.status(400);
+    throw new Error("Please provide password");
   }
 
   // checking for user existance
   const user = await User.findById(id);
   if (!user) {
-    throw new CustomError("User not found", 404);
+    res.status(404);
+    throw new Error("User not found");
   }
 
   // confirming the user password
@@ -132,29 +168,22 @@ const deleteUser = asyncHandler(async (req, res) => {
     await User.findByIdAndDelete(id);
     res.status(200).json({ msg: "User deleted" });
   } else {
-    throw new CustomError("Invalid Credentials", 401);
+    res.status(401);
+    throw new Error("Invalid Credentials");
   }
 });
 
 // user profile
+// get request
+// private access
 const userProfile = asyncHandler(async (req, res) => {
-  const { _id, name, email } = await User.findById(req.params.id);
+  const { name, email, role } = await User.findById(req.body.id);
   res.status(200).json({
-    id: _id,
     name: name,
     email: email,
+    role: role
   });
 });
-
-
-// get all users
-const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({}).select("-password");
-  res.status(200).json({
-    users
-  })
-})
-
 
 // generate token
 const generateToken = (id) => {
@@ -169,5 +198,4 @@ module.exports = {
   updateUser,
   deleteUser,
   userProfile,
-  getAllUsers
 };
