@@ -7,12 +7,21 @@ const {
   userProfile,
 } = require("../controllers/userControllers");
 const { protect } = require("../middlewares/authMiddleware");
+const {
+  createEmailChain,
+  createPasswordChain,
+  createNameChain,
+} = require("../middlewares/validationChains");
 
 const router = express.Router();
 
-router.route("/login").post(loginUser);
+router
+  .route("/login")
+  .post(createEmailChain(), createPasswordChain(), loginUser);
 
-router.route("/register").post(registerUser);
+router
+  .route("/register")
+  .post(createNameChain(), createEmailChain(), createPasswordChain(), registerUser);
 
 router
   .route("/")

@@ -3,12 +3,18 @@ const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const createError = require("http-errors");
-
+const {validationResult} = require("express-validator");
 // Login user
 // post request with email and password
 // public access
 
 const loginUser = asyncHandler(async (req, res) => {
+  const errors = validationResult(req);
+  if(!errors.isEmpty()){
+    for(let i=0; i<errors.array().length ; i++){
+      throw createError.BadRequest(errors.array()[i].msg);
+    }
+  }
   if (!req.body) {
     throw createError.BadRequest("Please provide email and password");
   }
@@ -44,6 +50,15 @@ const loginUser = asyncHandler(async (req, res) => {
 // public access
 
 const registerUser = asyncHandler(async (req, res) => {
+  const errors = validationResult(req);
+  if(!errors.isEmpty()){
+    for(let i=0; i<errors.array().length ; i++){
+      throw createError.BadRequest(errors.array()[i].msg);
+    }
+  }
+  // if (!errors.isEmpty()) {
+  //   throw createError.BadRequest(errors.array()[0].msg);
+  // }
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
     throw createError.BadRequest("Please provide name, email and password");
