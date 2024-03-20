@@ -79,7 +79,7 @@ const registerUser = asyncHandler(async (req, res) => {
     password: hashedPassword,
   });
 
-  const user_role=await UserRole.create({
+  await UserRole.create({
     UserId: user._id,
     Role: "tier4",
   });
