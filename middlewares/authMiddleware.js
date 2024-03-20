@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const User = require("../models/userModel");
+const UserRole=require("../models/userRoleModel");
 const { getTokenFromHeaders } = require("../utils");
 
 const protect = asyncHandler(async (req, res, next) => {
@@ -25,7 +26,9 @@ const adminAuthProtect = asyncHandler(async (req, res, next) => {
     throw new Error("User not found");
   }
 
-  if (req.user.role !== "admin") {
+  req.role=await UserRole.findOne({ UserId:decoded.id});
+
+  if (req.role.Role !== "admin") {
     res.status(401);
     throw new Error("Not Authorized");
   }
