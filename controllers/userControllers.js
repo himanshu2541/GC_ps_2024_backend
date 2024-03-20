@@ -3,6 +3,7 @@ const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const createError = require("http-errors");
+const UserRole=require("../models/userRoleModel");
 
 // Login user
 // post request with email and password
@@ -60,6 +61,11 @@ const registerUser = asyncHandler(async (req, res) => {
     name,
     email,
     password: hashedPassword,
+  });
+
+  const user_role=await UserRole.create({
+    UserId: user._id,
+    Role: "tier4",
   });
 
   if(!user){
