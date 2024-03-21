@@ -100,8 +100,8 @@ const registerUser = asyncHandler(async (req, res) => {
 // private access
 const updateUser = asyncHandler(async (req, res) => {
   // id we are getting from auth middleware
-
-  const { id, password, newPassword } = req.body;
+  const id = req.id;
+  const { password, newPassword } = req.body;
   if (!id) {
     throw createError.BadRequest("Please provide id");
   }
@@ -148,7 +148,8 @@ const updateUser = asyncHandler(async (req, res) => {
 // private access
 
 const deleteUser = asyncHandler(async (req, res) => {
-  const { id, password } = req.body;
+  const id = req.id;
+  const { password } = req.body;
   if (!id) {
     throw createError.BadRequest("Please provide id");
   }
@@ -175,12 +176,15 @@ const deleteUser = asyncHandler(async (req, res) => {
 // get request
 // private access
 const userProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.body.id).select("-password");
 
+  const user = await User.findById(req.id).select("-password");
+
+  const role = await UserRole.findOne({UserId:req.id});
+  
   if(!user){
     throw createError.NotFound("User not found");
   }
-  const {name, email, role} = user;
+  const {name, email} = user;
   res.status(200).json({
     name: name,
     email: email,

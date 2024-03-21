@@ -12,7 +12,7 @@ const protect = asyncHandler(async (req, res, next) => {
     throw new Error("User not found");
   }
 
-  req.body.id = decoded.id;
+  req.id = decoded.id;
   next();
 });
 
@@ -33,7 +33,7 @@ const adminAuthProtect = asyncHandler(async (req, res, next) => {
     throw new Error("Not Authorized");
   }
 
-  req.body.id = decoded.id
+  req.id = decoded.id
   next();
 });
 
